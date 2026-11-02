@@ -40,7 +40,7 @@ function home(){const n=S.answered;
  <div class="card" id="h2"><h2>Short answers</h2><p>Write a few sentences, then compare with a model answer.</p></div>
  <div class="card" id="h3"><h2>Flashcards</h2><p>The glossary terms, one at a time.</p></div>
  ${n?'<div class="card" id="h4"><h2>My progress</h2><p>See your strongest and weakest ideas.</p></div>':''}
- </div><p class="fine">This tool records anonymous usage (a random code, not your name) to help improve teaching. Practice questions are new and are not from your quiz.</p>`;
+ </div><p class="fine">This tool records anonymous usage (a random code, not your name) to help improve teaching.</p>`;
  $('#h1').onclick=quiz;$('#h2').onclick=shortMode;$('#h3').onclick=flash;if($('#h4'))$('#h4').onclick=summary}
 function head(){return`<div class="top"><button class="btn alt" id="bk">← Menu</button><span class="badge">Level ${S.level}: ${LEVELS[S.level]}</span><button class="btn alt" id="fin">See my progress</button></div>`}
 function wire(){$('#bk').onclick=home;$('#fin').onclick=summary}
@@ -86,7 +86,7 @@ function shortMode(){const it=pick(BANK.short);
   document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const r=+b.dataset.r;log({question_id:it.id,concept:it.concept,level:4,correct:r===1,misconception:r===0?'VAGUE':null,mode:'short'});$('#m').innerHTML+=`<p><button class="btn" id="nx">Another →</button></p>`;$('#nx').onclick=shortMode;document.querySelectorAll('[data-r]').forEach(x=>x.disabled=true)})}}
 // ---------- flashcards ----------
 function flash(){let g=shuf(BANK.gloss),i=0,back=false;
- const draw=()=>{const [t,d]=g[i];app.innerHTML=`<div class="top"><button class="btn alt" id="bk">← Menu</button><span class="badge">${i+1} / ${g.length}</span></div><div class="card flash" id="fc"><div>${back?esc(d):`<h2>${esc(t)}</h2><small>tap to flip</small>`}</div></div><p><button class="btn alt" id="pv">← Back</button> <button class="btn" id="nxc">Next →</button></p>`;
+ const draw=()=>{const [t,d,k]=g[i];app.innerHTML=`<div class="top"><button class="btn alt" id="bk">← Menu</button><span class="badge">${i+1} / ${g.length}</span></div><div class="card flash" id="fc"><div>${back?`${k&&window.ANIMS[k]?window.ANIMS[k]():''}<h3>${esc(t)}</h3>${esc(d)}`:`<h2>${esc(t)}</h2><small>tap to flip</small>`}</div></div><p><button class="btn alt" id="pv">← Back</button> <button class="btn" id="nxc">Next →</button></p>`;
   $('#bk').onclick=home;$('#fc').onclick=()=>{back=!back;draw()};$('#nxc').onclick=()=>{i=(i+1)%g.length;back=false;draw()};$('#pv').onclick=()=>{i=(i-1+g.length)%g.length;back=false;draw()}};draw()}
 // ---------- summary ----------
 function summary(){const cons=Object.keys(S.c).filter(c=>S.c[c].n>0).sort((a,b)=>S.c[a].s-S.c[b].s);const nice=c=>c.replace(/-/g,' ').replace(/^./,m=>m.toUpperCase());
