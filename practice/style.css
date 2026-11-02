@@ -55,3 +55,8 @@ table{border-collapse:collapse;width:100%}td,th{border-bottom:2px solid var(--ta
 .arr{animation:pulse 2s ease-in-out infinite}
 .pop{transform-box:fill-box;transform-origin:center;animation:pop 4s ease-in-out infinite;opacity:0}@keyframes pop{15%,90%{opacity:1;transform:scale(1)}0%{transform:scale(0)}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}.tick,.pop,.gap,.real{opacity:1!important}.g2{opacity:0!important}.g1,.say{opacity:1}}
+
+.tw{overflow-x:auto;margin:6px 0 12px}.tt{border:3px solid var(--ink);border-radius:12px;border-collapse:separate;border-spacing:0;background:#fff;width:100%;max-width:520px}
+.tt th{background:var(--ink);color:#fff;font-family:Fredoka,sans-serif;font-weight:600;padding:8px 12px;text-align:center}.tt td{text-align:center;padding:9px 12px;font-weight:700;font-size:1.05rem;border-bottom:2px solid var(--tan)}
+.tt td.pk{cursor:pointer}.tt td.pk:hover{background:var(--yellow)}.tt td.sel{background:var(--yellow);outline:3px solid var(--ink)}
+.tt td.good,.tt tr.good td{background:#D6F0E0}.tt td.miss{background:#FFE9B8;outline:3px dashed var(--green)}.tt td.bad,.tt tr.bad td{background:#FADBD8}.tt td.unk{color:var(--grey);background:#EEF0F8}.tt td.obs{background:#E6EEFF}

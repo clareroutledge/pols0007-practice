@@ -20,7 +20,8 @@ function genCalc(c){let it;
  if(c.kind==='obs'){const x=pick([0,1]),a=rnd(50,80),b=rnd(40,70);if(a===b)return genCalc(c);it=mk(`Unit i has Xᵢ = ${x}, Y₁ᵢ = ${a} and Y₀ᵢ = ${b}. What is the observed outcome Yᵢ?`,x?a:b,[[x?b:a,'BOTH','That is the other potential outcome, which we do not see for this unit.'],[a-b,'LABEL','That is the individual effect, which needs both and is never observed.'],[x,'LABEL','Xᵢ is whether they were treated, not their outcome.']],x?`Xᵢ = 1 so we see Y₁ᵢ = ${a}.`:`Xᵢ = 0 so we see Y₀ᵢ = ${b}.`)}
  it.options=shuf(it.options);it.id=c.id;it.concept=c.concept;it.level=c.level;it.calc=true;return it}
 // ---------- item pool ----------
-function pool(){const p=[];BANK.mcq.forEach(x=>p.push(Object.assign({type:'mcq'},x)));BANK.anim.forEach(x=>p.push(Object.assign({type:'mcq'},x)));BANK.two.forEach(x=>p.push(Object.assign({type:'two'},x)));BANK.calc.forEach(x=>p.push(Object.assign({type:'calc'},x)));return p}
+function pool(){const p=[];BANK.mcq.forEach(x=>p.push(Object.assign({type:'mcq'},x)));BANK.anim.forEach(x=>p.push(Object.assign({type:'mcq'},x)));BANK.two.forEach(x=>p.push(Object.assign({type:'two'},x)));BANK.calc.forEach(x=>p.push(Object.assign({type:'calc'},x)));
+ [['tb-obs-a','obs',2,'science-table'],['tb-obs-b','obs',3,'science-table'],['tb-miss-a','miss',2,'science-table',0],['tb-miss-b','miss',2,'science-table',1],['tb-eff-a','eff',2,'individual-effect'],['tb-eff-b','eff',3,'ate'],['tb-wrong-a','wrong',3,'science-table'],['tb-wrong-b','wrong',4,'science-table'],['tb-naive-a','naive',3,'naive-comparison'],['tb-naive-b','naive',4,'naive-comparison']].forEach(([id,kind,level,concept,v])=>p.push({id,type:'tpl',kind,level,concept,v}));return p}
 function concepts(){return[...new Set(POOL.map(x=>x.concept))]}
 function cs(c){return(S.c[c]||(S.c[c]={s:.4,n:0}))}
 function nextItem(){
@@ -53,10 +54,10 @@ function adapt(ok){S.last=(S.last||[]).concat([S.cur]).slice(-6);
  if(ok){S.st=(S.st||0)+1;S.ms=0;if(S.st>=2&&S.level<4){S.level++;S.st=0;S.msg='Nice: moving up to level '+S.level+' ('+LEVELS[S.level]+')'}}
  else{S.ms=(S.ms||0)+1;S.st=0;if(S.ms>=2&&S.level>1){S.level--;S.ms=0;S.msg='Let’s step back to level '+S.level+' and build up again'}}save()}
 function quiz(){const it=nextItem();S.cur=it.id;save();
- if(it.type==='two')return two(it);const q=it.type==='calc'?genCalc(it):it;return mcq(q)}
+ if(it.type==='two')return two(it);if(it.type==='tpl')return tpl(it);const q=it.type==='calc'?genCalc(it):it;return mcq(q)}
 function tipFor(mis){if(!mis||S.mis[mis]!==2)return'';return`<div class="tip"><b>Pattern spotted.</b> You’ve picked this kind of answer twice: <i>${esc(BANK.mis[mis])}</i>.<br>${esc(BANK.tips[mis])}</div>`}
 function mcq(q){const opts=q.type&&q.calc?q.options:shuf(q.options);
- app.innerHTML=head()+levelNote()+`<div class="card">${q.anim?window.ANIMS[q.anim]():''}<div class="stem">${esc(q.stem)}</div><div id="o">${opts.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.t)}</button>`).join('')}</div><div id="fb"></div></div>`;wire();
+ app.innerHTML=head()+levelNote()+`<div class="card">${q.anim?window.ANIMS[q.anim]():''}${q.table||''}<div class="stem">${esc(q.stem)}</div><div id="o">${opts.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.t)}</button>`).join('')}</div><div id="fb"></div></div>`;wire();
  document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.i];const ok=!!o.ok;
   document.querySelectorAll('.opt').forEach((x,i)=>{x.disabled=true;if(opts[i].ok)x.classList.add('right')});if(!ok)b.classList.add('wrong');
   const right=opts.find(x=>x.ok);
@@ -79,6 +80,74 @@ function two(it){
    <div style="margin-top:10px"><b>True effect: 5</b><div class="trk"><i class="bar" style="background:var(--green)" data-w="50"></i></div><b>What you would estimate: ${est}</b><div class="trk"><i class="bar" style="background:${it.dir==='none'?'var(--green)':'var(--orange)'}" data-w="${est*10}"></i></div></div><p><button class="btn" id="nx">Next →</button></p>`;
    setTimeout(()=>document.querySelectorAll('.bar').forEach(b=>b.style.width=b.dataset.w+'%'),50);
    $('#nx').onclick=quiz})})}
+
+// ---------- science-table questions ----------
+const NAMES=['Ana','Ben','Cy','Dara','Eli','Fay','Gus','Hana','Ivo','Jo','Kai','Lena'];
+function genRows(){const nm=shuf(NAMES).slice(0,4);let xs;do{xs=Array.from({length:4},()=>pick([0,1]))}while(xs.reduce((a,b)=>a+b,0)<1||xs.reduce((a,b)=>a+b,0)>3);
+ return nm.map((n,i)=>{const y0=rnd(45,72),e=rnd(-2,9);return{n,x:xs[i],y0,y1:y0+e,e}})}
+const obsV=r=>r.x?r.y1:r.y0;
+function tcell(r,i,c,mode,o){const v=c?r.y1:r.y0,obs=(r.x===c);
+ if(mode==='sci')return`<td data-r="${i}" data-c="${c}" class="${o.pick?'pk':''}">${v}</td>`;
+ if(mode==='real')return`<td class="${obs?'obs':'unk'}">${obs?v:'?'}</td>`;
+ const placed=(i===o.bad)?(r.x?0:1):r.x;return`<td class="${c===placed?'obs':'unk'}">${c===placed?obsV(r):'?'}</td>`}
+function tbl(rows,mode,o={}){return`<div class="tw"><table class="tt"><tr><th>Person</th><th>Xᵢ</th><th>Y₁ᵢ</th><th>Y₀ᵢ</th></tr>${rows.map((r,i)=>`<tr data-r="${i}"><td><b>${r.n}</b></td><td>${r.x}</td>${tcell(r,i,1,mode,o)}${tcell(r,i,0,mode,o)}</tr>`).join('')}</table></div>`}
+function appendStep(parent,it,s,idx,cb){const box=document.createElement('div');const opts=shuf(s.q.options);
+ box.innerHTML=`<p class="stem" style="margin-top:14px">${esc(s.label)} · ${esc(s.q.stem)}</p>`+opts.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.t)}</button>`).join('')+'<div class="fbk"></div>';parent.appendChild(box);
+ box.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.i],ok=!!o.ok;box.querySelectorAll('.opt').forEach((x,i)=>{x.disabled=true;if(opts[i].ok)x.classList.add('right')});if(!ok)b.classList.add('wrong');
+  record(it,it.id+'.'+idx,s.concept,ok,ok?null:o.mis,'table');const right=opts.find(x=>x.ok);
+  box.querySelector('.fbk').innerHTML=`<div class="why ${ok?'good':''}">${ok?'✓ ':'✗ '}${esc(o.why)}${ok?'':'<br><b>Correct:</b> '+esc(right.t)+'. '+esc(right.why)}</div>${ok?'':tipFor(o.mis)}`;cb(ok)})}
+function runSteps(it,rows,mode,steps){let k=0,all=true;app.innerHTML=head()+levelNote()+`<div class="card">${tbl(rows,mode)}<div id="st"></div></div>`;wire();
+ const next=()=>{if(k>=steps.length){adapt(all);$('#st').insertAdjacentHTML('beforeend','<p><button class="btn" id="nx">Next →</button></p>');$('#nx').onclick=quiz;return}
+  const i=k++;appendStep($('#st'),it,Object.assign({label:'Step '+(i+1)},steps[i]),i+1,ok=>{if(!ok)all=false;next()})};next()}
+window.__tpl=it=>tpl(it);
+function tpl(it){return({obs:qObs,miss:qMiss,eff:qEff,wrong:qWrong,naive:qNaive})[it.kind](it)}
+function qObs(it){const rows=genRows(),sel=new Set();let done=false;
+ app.innerHTML=head()+levelNote()+`<div class="card"><div class="stem">This is a science table: both outcomes for four people. Tap the cells a researcher would actually see in real data.</div>${tbl(rows,'sci',{pick:1})}<p><button class="btn" id="ck">Check</button></p><div id="fb"></div></div>`;wire();
+ document.querySelectorAll('td[data-c]').forEach(td=>td.onclick=()=>{if(done)return;const k=td.dataset.r+'-'+td.dataset.c;if(sel.has(k)){sel.delete(k);td.classList.remove('sel')}else{sel.add(k);td.classList.add('sel')}});
+ $('#ck').onclick=()=>{if(done)return;done=true;$('#ck').disabled=true;const exp=new Set(rows.map((r,i)=>i+'-'+r.x));
+  const ok=sel.size===exp.size&&[...sel].every(k=>exp.has(k));const both=rows.some((r,i)=>sel.has(i+'-1')&&sel.has(i+'-0'));const wrongPick=[...sel].some(k=>!exp.has(k));
+  const mis=ok?null:both?'BOTH':wrongPick?'LABEL':null;
+  document.querySelectorAll('td[data-c]').forEach(td=>{const k=td.dataset.r+'-'+td.dataset.c;td.classList.remove('sel');if(exp.has(k))td.classList.add(sel.has(k)?'good':'miss');else{td.classList.add(sel.has(k)?'bad':'unk');td.textContent='?'}});
+  record(it,it.id,'science-table',ok,mis,'table');adapt(ok);
+  $('#fb').innerHTML=`<div class="why ${ok?'good':''}">${ok?'✓ ':'✗ '}We only see the outcome on the path each person took: Xᵢ = 1 means we see Y₁ᵢ, Xᵢ = 0 means we see Y₀ᵢ. Every row has one number and one “?”.${ok?'':' The outlined cells are what we really see; red marks a cell you tapped that we cannot see.'}</div>${ok?'':tipFor(mis)}<p><button class="btn" id="nx">Next →</button></p>`;$('#nx').onclick=quiz}}
+function qMiss(it){const rows=genRows();let q;
+ if(it.v===0){q={stem:'In this real data, what do the “?” cells mean?',options:[
+  {t:'Outcomes on the path that person did not take, so they can never be observed',ok:true,why:'Each person only takes one path, so one of their two potential outcomes is always missing.'},
+  {t:'Data that was lost and could be recovered by collecting more',ok:false,mis:'BOTH',why:'More data never shows the path not taken for the same person.'},
+  {t:'Zeros: the person had no outcome',ok:false,mis:'LABEL',why:'A ? is an unknown value, not a zero.'},
+  {t:'Values we can fill in using the average of the other group',ok:false,mis:'DIFF',why:'That is a guess that assumes the groups are alike. It does not reveal the real value.'}]}}
+ else{const r=rows[rnd(0,3)],oc=r.x?'Y₀ᵢ':'Y₁ᵢ',oc2=r.x?'Y₁ᵢ':'Y₀ᵢ';q={stem:`${r.n} has Xᵢ = ${r.x} and we observe ${obsV(r)}. What goes in ${r.n}’s ${oc} cell?`,options:[
+  {t:'? (we never observe it)',ok:true,why:`${r.n} took the ${oc2} path, so ${oc} is the counterfactual.`},
+  {t:String(obsV(r)),ok:false,mis:'BOTH',why:`${obsV(r)} is ${oc2}, the outcome we did observe. It belongs in the other column.`},
+  {t:'0',ok:false,mis:'LABEL',why:'An unobserved outcome is unknown, not zero.'},
+  {t:'The average of the people on the other path',ok:false,mis:'DIFF',why:'That would be a stand-in. It is not the person’s real outcome.'}]}}
+ q.id=it.id;q.concept='science-table';q.level=it.level;q.table=tbl(rows,'real');q.type='mcq';q.calc=false;return mcq(q)}
+function qEff(it){let rows,i;do{rows=genRows();i=rnd(0,3)}while(false);const r=rows[i];const effs=rows.map(x=>x.e),ate=f1(mean(effs));
+ const s1=mk(`What is ${r.n}’s individual causal effect (Y₁ᵢ − Y₀ᵢ)?`,r.e,[[-r.e,'DIR','The order is reversed: Y₁ᵢ minus Y₀ᵢ.'],[r.y1,'LABEL','That is Y₁ᵢ alone. The effect is the gap between the two columns.'],[r.y1+r.y0,'CALC','Adding the two gives nothing useful.']],`${r.y1} − ${r.y0} = ${r.e}.`);
+ const s2=mk('What is the ATE: the average of everyone’s individual effect?',ate,[[effs.reduce((a,b)=>a+b,0),'CALC','That is the sum of the effects. Divide by 4.'],[f1(mean(rows.map(x=>x.y1))),'DEF','That is the average Y₁ᵢ. The ATE averages Y₁ᵢ − Y₀ᵢ.'],[effs[0],'DEF','That is one person’s effect, not the average.']],`Effects: ${effs.join(', ')}. Average = ${ate}.`);
+ runSteps(it,rows,'sci',[{q:s1,concept:'individual-effect'},{q:s2,concept:'ate'}])}
+function qNaive(it){let rows,nv,ate;do{rows=genRows();const t=rows.filter(r=>r.x),c=rows.filter(r=>!r.x);nv=f1(mean(t.map(r=>r.y1))-mean(c.map(r=>r.y0)));ate=f1(mean(rows.map(r=>r.e)))}while(Math.abs(nv-ate)<1);
+ const t=rows.filter(r=>r.x),c=rows.filter(r=>!r.x);const mt=f1(mean(t.map(r=>r.y1))),mc=f1(mean(c.map(r=>r.y0)));
+ const s1=mk('We only observe Y₁ᵢ for people with Xᵢ = 1 and Y₀ᵢ for people with Xᵢ = 0. What is the naive comparison (treated average − control average)?',nv,[[f1(-nv),'DIR','The order is reversed: treated minus control.'],[ate,'DEF','That is the ATE, which needs both columns for everyone.'],[f1(mean(rows.map(obsV))),'CALC','That averages everyone together. We need two averages, then their difference.']],`Treated average ${mt}, control average ${mc}, difference ${nv}.`);
+ const s2=mk('Now use the whole table, both columns for everyone. What is the ATE?',ate,[[nv,'DIFF','That is the naive comparison, which only uses what we would observe.'],[f1(mean(rows.map(r=>r.y1))),'DEF','That is the average Y₁ᵢ only.'],[f1(rows.map(r=>r.e).reduce((a,b)=>a+b,0)),'CALC','That is the sum. Divide by 4.']],`Average of ${rows.map(r=>r.e).join(', ')} = ${ate}.`);
+ const s3={stem:'Why do the naive comparison and the ATE differ?',options:[
+  {t:'The naive comparison compares different people, so the gap can reflect who was treated, not only what treatment did',ok:true,why:'The ATE uses each person’s own two outcomes. The naive comparison swaps in other people as stand-ins.'},
+  {t:'The sample is too small to calculate either properly',ok:false,mis:'DEF',why:'Size is not the issue: with this table both are calculated exactly, and still differ.'},
+  {t:'The ATE only uses the outcomes we observe',ok:false,mis:'DEF',why:'It is the other way round: the ATE needs both outcomes, which only a data god has.'},
+  {t:'They cannot differ if the arithmetic is right',ok:false,mis:'DIFF',why:'They are different quantities and often differ, as here.'}]};
+ runSteps(it,rows,'sci',[{q:s1,concept:'naive-comparison'},{q:s2,concept:'ate'},{q:s3,concept:'naive-comparison'}])}
+function qWrong(it){const rows=genRows(),bad=rnd(0,3);let done=false;
+ app.innerHTML=head()+levelNote()+`<div class="card"><div class="stem">This is real data. Someone has put one person’s observed outcome in the wrong column. Tap the wrong row.</div>${tbl(rows,'wrong',{bad})}<div id="fb"></div></div>`;wire();
+ document.querySelectorAll('tr[data-r]').forEach(tr=>{tr.style.cursor='pointer';tr.onclick=()=>{if(done)return;done=true;const i=+tr.dataset.r,ok=i===bad;const r=rows[bad];
+  document.querySelector(`tr[data-r="${bad}"]`).classList.add('good');if(!ok)tr.classList.add('bad');
+  record(it,it.id+'.1','science-table',ok,ok?null:'LABEL','table');
+  $('#fb').innerHTML=`<div class="why ${ok?'good':''}">${ok?'✓ ':'✗ '}${r.n} has Xᵢ = ${r.x}, so the observed outcome belongs under ${r.x?'Y₁ᵢ':'Y₀ᵢ'}, but it is under ${r.x?'Y₀ᵢ':'Y₁ᵢ'}.</div>`;
+  const q={stem:'What is the rule for where an observed outcome goes?',options:[
+   {t:'Under the path the person took: Y₁ᵢ if Xᵢ = 1, Y₀ᵢ if Xᵢ = 0',ok:true,why:'The observed outcome is the potential outcome on the path actually taken.'},
+   {t:'Always under Y₁ᵢ',ok:false,mis:'LABEL',why:'Only for treated people. Untreated people’s observed outcome is Y₀ᵢ.'},
+   {t:'Always under Y₀ᵢ',ok:false,mis:'LABEL',why:'Only for untreated people. Treated people’s observed outcome is Y₁ᵢ.'},
+   {t:'In both columns, because both outcomes exist',ok:false,mis:'BOTH',why:'Both exist in principle, but we only observe one per person.'}]};
+  appendStep($('#fb'),it,{label:'Step 2',q,concept:'science-table'},2,ok2=>{adapt(ok&&ok2);$('#fb').insertAdjacentHTML('beforeend','<p><button class="btn" id="nx">Next →</button></p>');$('#nx').onclick=quiz})}})}
 // ---------- short answers ----------
 function shortMode(){const it=pick(BANK.short);
  app.innerHTML=`<div class="top"><button class="btn alt" id="bk">← Menu</button><span class="badge">Short answer</span></div><div class="card"><div class="stem">${esc(it.q)}</div><textarea placeholder="Write 2–3 sentences, in your own words"></textarea><p><button class="btn" id="rv">Show model answer</button></p><div id="m"></div></div>`;
