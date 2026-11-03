@@ -65,7 +65,7 @@ function mcq(q){const opts=q.type&&q.calc?q.options:shuf(q.options);
   $('#fb').innerHTML=`<div class="why ${ok?'good':''}">${ok?'✓ ':'✗ '}${esc(ok?o.why:o.why+' ')}${ok?'':'<br><b>Correct:</b> '+esc(right.t)+'. '+esc(right.why)}</div>${ok?'':tipFor(o.mis)}<p><button class="btn" id="nx">Next →</button></p>`;
   $('#nx').onclick=quiz})}
 function two(it){
- const o1=shuf(it.opts1);const dirs=[{t:'Too large (it overstates the effect)',k:'large'},{t:'Too small (it understates the effect)',k:'small'},{t:'No systematic bias from this source',k:'none'}];
+ const o1=shuf(it.opts1);const dirs=[{t:'Too large (it overstates the effect)',k:'large'},{t:'Too small (it understates the effect)',k:'small'},{t:'No systematic bias from this source',k:'none'},{t:'Reversed (it points the wrong way)',k:'rev'}];
  app.innerHTML=head()+levelNote()+`<div class="card"><p class="stem">${esc(it.scen)}</p><div id="s1"><p class="stem">Step 1 · ${esc(it.s1)}</p>${o1.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.t)}</button>`).join('')}</div><div id="f1"></div><div id="s2" class="hide"></div><div id="f2"></div></div>`;wire();
  document.querySelectorAll('#s1 .opt').forEach(b=>b.onclick=()=>{const o=o1[+b.dataset.i];const ok=!!o.ok;
   document.querySelectorAll('#s1 .opt').forEach((x,i)=>{x.disabled=true;if(o1[i].ok)x.classList.add('right')});if(!ok)b.classList.add('wrong');
@@ -75,9 +75,9 @@ function two(it){
   s2.querySelectorAll('.opt').forEach(b2=>b2.onclick=()=>{const k=b2.dataset.k;const ok2=k===it.dir;
    s2.querySelectorAll('.opt').forEach(x=>{x.disabled=true;if(x.dataset.k===it.dir)x.classList.add('right')});if(!ok2)b2.classList.add('wrong');
    record(it,it.id+'.2','direction-of-bias',ok2,ok2?null:'DIR','two2');adapt(ok&&ok2);
-   const est=it.dir==='large'?9:it.dir==='small'?2:5;
+   const est=it.dir==='large'?9:it.dir==='small'?2:it.dir==='rev'?-3:5;
    $('#f2').innerHTML=`<div class="why ${ok2?'good':''}">${ok2?'✓ ':'✗ '}${esc(it.why)}</div>${ok2?'':tipFor('DIR')}
-   <div style="margin-top:10px"><b>True effect: 5</b><div class="trk"><i class="bar" style="background:var(--green)" data-w="50"></i></div><b>What you would estimate: ${est}</b><div class="trk"><i class="bar" style="background:${it.dir==='none'?'var(--green)':'var(--orange)'}" data-w="${est*10}"></i></div></div><p><button class="btn" id="nx">Next →</button></p>`;
+   <div style="margin-top:10px"><b>True effect: 5</b><div class="trk"><i class="bar" style="background:var(--green)" data-w="50"></i></div><b>What you would estimate: ${est}</b><div class="trk"><i class="bar" style="background:${it.dir==='none'?'var(--green)':'var(--orange)'}" data-w="${Math.max(est,0)*10}"></i></div></div><p><button class="btn" id="nx">Next →</button></p>`;
    setTimeout(()=>document.querySelectorAll('.bar').forEach(b=>b.style.width=b.dataset.w+'%'),50);
    $('#nx').onclick=quiz})})}
 
